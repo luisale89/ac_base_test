@@ -72,9 +72,9 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  logger("debug message...", DEBUG);
-  logger("info message...", INFO);
-  logger("warning message...", WARNING);
-  logger("error message...", ERROR);
+  logger("debug message", DEBUG);
+  logger("info message", INFO);
+  logger("warning message", WARNING);
+  logger("error message", ERROR);
   delay(1000);
 }
