@@ -4,6 +4,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <SPI.h>
+#include <Adafruit_NeoPixel.h>
 
 //global variables
 enum LOG_LEVEL {
@@ -22,6 +23,7 @@ enum LOG_LEVEL {
 #define AP_BTN 19
 #define NOW_BTN 18
 #define AMB_TEMP 32
+#define NUMPIXELS 24
 
 float ambient_t_reading = 0.0;
 bool last_output_state = false;
@@ -35,6 +37,9 @@ RTC_DS3231 RTC;
 
 //logger level definition.
 LOG_LEVEL logger_level = DEBUG;
+
+//neopixel
+Adafruit_NeoPixel pixels(NUMPIXELS, LED_CLOCK, NEO_GRB + NEO_KHZ400);
 
 //logger function.
 void logger(char *message, LOG_LEVEL msg_level){
@@ -93,7 +98,7 @@ int myFunction(int x, int y) {
   return x + y;
 }
 
-float get_ambient_temperature() {
+void get_ambient_temperature() {
   char word_buffer[30];
   char temp_buffer[8];
   //--
@@ -113,7 +118,7 @@ float get_ambient_temperature() {
   sprintf(word_buffer, "Temperature value: %s", temp_buffer);
   logger(word_buffer, DEBUG);
   //--
-  return tempC;
+  return;
 }
 
 
@@ -145,6 +150,17 @@ void update_outputs(){
   return;
 }
 
+void update_pixels(){
+  pixels.clear();
+
+  for(int i=0; i<NUMPIXELS; i++) {
+
+    pixels.setPixelColor(i, pixels.Color(255, 0, 0));
+    pixels.show();
+    delay(42); // approx. 1sec.
+  }
+}
+
 void setup() {
   // put your setup code here, to run once:
   logger("Welcome! Setting up device.", INFO);
@@ -171,15 +187,19 @@ void setup() {
   ambient_t_sensor.begin();
   ambient_t_sensor.setResolution(9); //9 bits resolution.
   delay(500);
-  logger("testing sensor reading for the first time.", DEBUG);
-  ambient_t_reading = get_ambient_temperature();
-  logger("Ambient Temp. sensor ok!", DEBUG);
+  logger("first temp. reading..", DEBUG);
+  get_ambient_temperature();
   //-- I-O
   pinMode(RADAR, INPUT);
   pinMode(MANUAL_BTN, INPUT);
   pinMode(AP_BTN, INPUT);
   pinMode(NOW_BTN, INPUT);
   pinMode(NETWORK_LED, OUTPUT);
+
+  //-- NeoPixel
+  pixels.begin();
+  pixels.show();
+  pixels.setBrightness(50); //50% brightness
 
   logger("setup finished. 1sec", DEBUG);
   delay(1000);
@@ -188,10 +208,11 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   //get DS18B20 temperature and print to serial logger.
-  ambient_t_reading = get_ambient_temperature();
+  get_ambient_temperature();
   update_inputs();
   update_outputs();
+  update_pixels();
 
   //--delay and back again.
-  delay(1000);
+  delay(500);
 }
