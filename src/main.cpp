@@ -4,7 +4,6 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <SPI.h>
-#include <Adafruit_NeoPixel.h>
 
 //global variables
 enum LOG_LEVEL {
@@ -17,7 +16,6 @@ enum LOG_LEVEL {
 // pinout
 #define RADAR 26
 #define LED_DATA 27
-#define LED_CLOCK 14
 #define NETWORK_LED 2
 #define MANUAL_BTN 34
 #define AP_BTN 19
@@ -39,7 +37,6 @@ RTC_DS3231 RTC;
 LOG_LEVEL logger_level = DEBUG;
 
 //neopixel
-Adafruit_NeoPixel pixels(NUMPIXELS, LED_CLOCK, NEO_GRB + NEO_KHZ400);
 
 //logger function.
 void logger(char *message, LOG_LEVEL msg_level){
@@ -49,7 +46,7 @@ void logger(char *message, LOG_LEVEL msg_level){
   case DEBUG:
     /* code */
     if (logger_level <= DEBUG) {
-      Serial.print("# debug @ ");
+      Serial.print("- [D] @ ");
       Serial.print(now);
       Serial.print(" > msg: ");
       Serial.println(message);
@@ -59,7 +56,7 @@ void logger(char *message, LOG_LEVEL msg_level){
 
   case INFO:
     if (logger_level <= INFO) {
-      Serial.print("- info @ ");
+      Serial.print("- [I] @ ");
       Serial.print(now);
       Serial.print(" > msg: ");
       Serial.println(message);
@@ -69,7 +66,7 @@ void logger(char *message, LOG_LEVEL msg_level){
 
   case WARNING:
     if (logger_level <= WARNING) {
-      Serial.print("% warning @ ");
+      Serial.print("- [W] @ ");
       Serial.print(now);
       Serial.print(" > msg: ");
       Serial.println(message);
@@ -79,7 +76,7 @@ void logger(char *message, LOG_LEVEL msg_level){
 
   case ERROR:
     if (logger_level <= ERROR) {
-      Serial.print("$ error @ ");
+      Serial.print("- [E] @ ");
       Serial.print(now);
       Serial.print(" > msg: ");
       Serial.println(message);
@@ -88,14 +85,11 @@ void logger(char *message, LOG_LEVEL msg_level){
     break;
   
   default:
-  Serial.println("not implemented..");
+    Serial.println("not implemented..");
+    Serial.flush();
     break;
   }
   return;
-}
-
-int myFunction(int x, int y) {
-  return x + y;
 }
 
 void get_ambient_temperature() {
@@ -107,7 +101,7 @@ void get_ambient_temperature() {
   float tempC = ambient_t_sensor.getTempCByIndex(0); // temp of the first sensor.
   if (tempC == -127)
   {
-    logger("Error -127 from OneWire sensor - [Ambient temperature]", ERROR);
+    logger("Error -127 while reading OneWire sensor; [Ambient temperature]", ERROR);
   }
   if (tempC == 85) {
     logger("Got 85 deg. as tempC reading", WARNING);
@@ -123,12 +117,8 @@ void get_ambient_temperature() {
 
 
 void update_inputs(){
-// #define RADAR 26;
-// #define MANUAL_BTN 34;
-// #define AP_BTN 19;
-// #define NOW_BTN 18;
 char word_buffer[40];
-sprintf(word_buffer, "input states: RADAR[%d], MANU[%d], AP[%d], NOW[%d]", 
+sprintf(word_buffer, "input: RAD[%d] MANU[%d] AP[%d] NOW[%d]", 
 digitalRead(RADAR), digitalRead(MANUAL_BTN), digitalRead(AP_BTN), digitalRead(NOW_BTN));
 logger(word_buffer, DEBUG);
 return;
@@ -150,24 +140,13 @@ void update_outputs(){
   return;
 }
 
-void update_pixels(){
-  pixels.clear();
-
-  for(int i=0; i<NUMPIXELS; i++) {
-
-    pixels.setPixelColor(i, pixels.Color(255, 0, 0));
-    pixels.show();
-    delay(42); // approx. 1sec.
-  }
-}
-
 void setup() {
   // put your setup code here, to run once:
   logger("Welcome! Setting up device.", INFO);
   //--Serial.
   Serial.begin(115200);
   //--RTC
-  logger("finding RTC on I2C bus", DEBUG);
+  logger("searching RTC on I2C bus", DEBUG);
   if (!RTC.begin())
   {
     logger("RTC not found in I2C bus, please reboot", ERROR);
@@ -183,9 +162,9 @@ void setup() {
   }
   logger("RTC configured!", DEBUG);
   //--DS18B20
-  logger("Setting up OneWire sensor", DEBUG);
+  logger("Setting up OneWire sensor with 12 bits res.", DEBUG);
   ambient_t_sensor.begin();
-  ambient_t_sensor.setResolution(9); //9 bits resolution.
+  ambient_t_sensor.setResolution(12); //12 bits resolution.
   delay(500);
   logger("first temp. reading..", DEBUG);
   get_ambient_temperature();
@@ -197,22 +176,17 @@ void setup() {
   pinMode(NETWORK_LED, OUTPUT);
 
   //-- NeoPixel
-  pixels.begin();
-  pixels.show();
-  pixels.setBrightness(50); //50% brightness
 
   logger("setup finished. 1sec", DEBUG);
   delay(1000);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   //get DS18B20 temperature and print to serial logger.
   get_ambient_temperature();
   update_inputs();
   update_outputs();
-  update_pixels();
 
   //--delay and back again.
-  delay(500);
+  delay(1000);
 }
