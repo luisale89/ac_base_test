@@ -130,6 +130,12 @@ void update_IO(){
   
   if (millis() - lastIOUpdate >= IOUpdateInterval) {
     //-
+    // get datetime
+    DateTime now = RTC.now();
+    char buf2[] = "YYMMDD-hh:mm:ss";
+    logger("printing datetime ->", DEBUG);
+    Serial.println(now.toString(buf2));
+
     sprintf(word_buffer, "inputs: RAD[%d] MAN[%d] AP[%d] NOW[%d]", 
     digitalRead(RADAR), digitalRead(MANUAL_BTN), digitalRead(AP_BTN), digitalRead(NOW_BTN));
     logger(word_buffer, DEBUG);
@@ -173,6 +179,7 @@ void setup() {
     RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
   logger("RTC configured!", DEBUG);
+  
 
   //--DS18B20
   logger("Setting up DS18B20 sensor.", DEBUG);
